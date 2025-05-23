@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Spelling App</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const SpellingApp = () => {
+          const [currentWord, setCurrentWord] = useState('');
+          const [userInput, setUserInput] = useState('');
+          const [feedback, setFeedback] = useState('');
+          const [score, setScore] = useState(0);
+          const [totalAttempts, setTotalAttempts] = useState(0);
+          const [showAnswer, setShowAnswer] = useState(false);
+          const [gameStarted, setGameStarted] = useState(false);
+          const [letterCounts, setLetterCounts] = useState({});
+
+          // Simple word list appropriate for kids
+          const wordList = [
+            'cat', 'dog', 'sun', 'tree', 'book', 'fish', 'bird', 'cake', 'moon', 'star',
+            'apple', 'house', 'water', 'happy', 'green', 'small', 'quick', 'jump', 'play', 'smile',
+            'school', 'friend', 'family', 'animal', 'flower', 'purple', 'orange', 'yellow', 'garden', 'cookie'
+          ];
+
+          // Keyboard layout
+          const keyboardRows = [
+            ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+            ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+            ['z', 'x', 'c', 'v', 'b', 'n', 'm']
+          ];
+
+          const getRandomWord = () => {
+            const randomIndex = Math.floor(Math.random() * wordList.length);
+            return wordList[randomIndex];
+          };
+
+          const countLettersInWord = (word) => {
+            const counts = {};
+            for (const letter of word.toLowerCase()) {
+              counts[letter] = (counts[letter] || 0) + 1;
+            }
+            return counts;
+          };
+
+          const startNewWord = () => {
+            const newWord = getRandomWord();
+            setCurrentWord(newWord);
+            setUserInput('');
+            setFeedback('');
+            setShowAnswer(false);
+            setGameStarted(true);
+            setLetterCounts(countLettersInWord(newWord));
+          };
+
+          const speakWord = () => {
+            if ('speechSynthesis' in window && currentWord) {
+              const utterance = new SpeechSynthesisUtterance(currentWord);
+              utterance.rate = 0.6;
+              utterance.pitch = 1.3;
+              utterance.volume = 0.9;
+              
+              // Try to find a female voice
+              const voices = speechSynthesis.getVoices();
+              const femaleVoice = voices.find(voice => 
+                voice.name.toLowerCase().includes('female') ||
+                voice.name.toLowerCase().includes('woman') ||
+                voice.name.toLowerCase().includes('samantha') ||
+                voice.name.toLowerCase().includes('karen') ||
+                voice.name.toLowerCase().includes('victoria') ||
+                voice.name.toLowerCase().includes('alex') ||
+                voice.name.toLowerCase().includes('serena')
+              );
+              
+              if (femaleVoice) {
+                utterance.voice = femaleVoice;
+              }
+              
+              speechSynthesis.speak(utterance);
+            }
+          };
+
+          const playSuccessSound = () => {
+            // Create a simple success sound using Web Audio API
+            if ('AudioContext' in window || 'webkitAudioContext' in window) {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+              
+              // Create a pleasant "ding" sound
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              
+              // Create a rising tone sequence
+              oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+              oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+              oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+              
+              oscillator.type = 'sine';
+              
+              // Gentle volume envelope
+              gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+              gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+              
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.4);
+            }
+          };
+
+          const handleLetterClick = (letter) => {
+            const currentCounts = { ...letterCounts };
+            const letterInWord = currentWord.toLowerCase().includes(letter);
+            const remainingCount = currentCounts[letter] || 0;
+
+            if (letterInWord && remainingCount > 0) {
+              setUserInput(prev => prev + letter);
+              currentCounts[letter] = remainingCount - 1;
+              setLetterCounts(currentCounts);
+            }
+          };
+
+          const handleBackspace = () => {
+            if (userInput.length > 0) {
+              const lastLetter = userInput[userInput.length - 1].toLowerCase();
+              setUserInput(prev => prev.slice(0, -1));
+              
+              // Restore the letter count
+              const currentCounts = { ...letterCounts };
+              if (currentWord.toLowerCase().includes(lastLetter)) {
+                currentCounts[lastLetter] = (currentCounts[lastLetter] || 0) + 1;
+                setLetterCounts(currentCounts);
+              }
+            }
+          };
+
+          const checkSpelling = () => {
+            const isCorrect = userInput.toLowerCase().trim() === currentWord.toLowerCase();
+            setTotalAttempts(prev => prev + 1);
+            
+            if (isCorrect) {
+              setScore(prev => prev + 1);
+              setFeedback('correct');
+              // Play success sound after a short delay
+              setTimeout(() => playSuccessSound(), 300);
+            } else {
+              setFeedback('incorrect');
+              setShowAnswer(true);
+            }
+          };
+
+          const resetGame = () => {
+            setScore(0);
+            setTotalAttempts(0);
+            setGameStarted(false);
+            setCurrentWord('');
+            setUserInput('');
+            setFeedback('');
+            setShowAnswer(false);
+            setLetterCounts({});
+          };
+
+          const getKeyStyle = (letter) => {
+            const letterInWord = currentWord.toLowerCase().includes(letter);
+            const remainingCount = letterCounts[letter] || 0;
+            const hasBeenUsed = letterInWord && remainingCount === 0;
+
+            if (!letterInWord) {
+              // Gray out letters not in the word
+              return "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50";
+            } else if (hasBeenUsed) {
+              // Used up all occurrences - show as used
+              return "bg-green-200 text-green-700 cursor-not-allowed opacity-60";
+            } else {
+              // Available letters in the word
+              return "bg-gradient-to-br from-yellow-300 to-orange-400 text-orange-800 hover:from-yellow-400 hover:to-orange-500 transform hover:scale-105 cursor-pointer shadow-lg";
+            }
+          };
+
+          useEffect(() => {
+            if (gameStarted && currentWord) {
+              setTimeout(() => speakWord(), 500);
+            }
+          }, [currentWord, gameStarted]);
+
+          // Simple icon components (replacing Lucide icons)
+          const VolumeIcon = () => (
+            <span style={{fontSize: '24px'}}>🔊</span>
+          );
+
+          const DeleteIcon = () => (
+            <span style={{fontSize: '20px'}}>⌫</span>
+          );
+
+          const CheckIcon = () => (
+            <span style={{fontSize: '48px'}}>✅</span>
+          );
+
+          const XIcon = () => (
+            <span style={{fontSize: '48px'}}>❌</span>
+          );
+
+          const RefreshIcon = () => (
+            <span style={{fontSize: '20px'}}>🔄</span>
+          );
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-4">
+              <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="text-center mb-6">
+                  <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+                    🌟 Spelling Fun! 🌟
+                  </h1>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 inline-block">
+                    <div className="text-xl md:text-2xl font-semibold text-white">
+                      Score: {score}/{totalAttempts}
+                    </div>
+                  </div>
+                </div>
+
+                {!gameStarted ? (
+                  /* Welcome Screen */
+                  <div className="text-center">
+                    <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl max-w-2xl mx-auto">
+                      <div className="text-6xl mb-6">📝</div>
+                      <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+                        Ready to Practice Spelling?
+                      </h2>
+                      <p className="text-lg md:text-xl text-gray-600 mb-8">
+                        Listen to the word, then tap the letters to spell it!
+                      </p>
+                      <button
+                        onClick={startNewWord}
+                        className="bg-gradient-to-r from-green-400 to-blue-500 text-white text-2xl md:text-3xl font-bold py-4 md:py-6 px-8 md:px-12 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                      >
+                        Let's Start! 🚀
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Game Screen */
+                  <div className="space-y-6">
+                    {/* Word Display and Audio */}
+                    <div className="bg-white rounded-3xl p-4 shadow-2xl text-center">
+                      <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">
+                        Listen and Spell the Word!
+                      </h2>
+                      
+                      <button
+                        onClick={speakWord}
+                        className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-lg md:text-xl font-bold py-3 px-5 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 mb-4"
+                      >
+                        <VolumeIcon /> Play Word
+                      </button>
+
+                      {showAnswer && (
+                        <div className="bg-blue-100 rounded-2xl p-3 mb-3">
+                          <p className="text-md text-gray-700">The word was:</p>
+                          <p className="text-2xl md:text-3xl font-bold text-blue-600">{currentWord}</p>
+                        </div>
+                      )}
+
+                      {/* Input Display */}
+                      <div className="mb-4">
+                        <div className="bg-gray-100 rounded-2xl p-4 min-h-[60px] flex items-center justify-center">
+                          <span className="text-2xl md:text-3xl font-bold text-gray-800 tracking-wider">
+                            {userInput || "Tap letters below..."}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Backspace and Check Buttons */}
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        <button
+                          onClick={handleBackspace}
+                          disabled={userInput.length === 0}
+                          className="bg-gradient-to-r from-red-400 to-pink-500 text-white text-md font-bold py-2 px-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                          <DeleteIcon /> Delete
+                        </button>
+                        
+                        <button
+                          onClick={checkSpelling}
+                          disabled={userInput.length === 0}
+                          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-md font-bold py-2 px-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                          Check Spelling ✨
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Interactive Keyboard */}
+                    <div className="bg-white rounded-3xl p-4 shadow-2xl">
+                      <div className="space-y-2">
+                        {keyboardRows.map((row, rowIndex) => (
+                          <div key={rowIndex} className="flex justify-center gap-1 md:gap-2">
+                            {row.map((letter) => {
+                              const remainingCount = letterCounts[letter] || 0;
+                              const letterInWord = currentWord.toLowerCase().includes(letter);
+                              
+                              return (
+                                <button
+                                  key={letter}
+                                  onClick={() => handleLetterClick(letter)}
+                                  disabled={!letterInWord || remainingCount === 0}
+                                  className={`
+                                    relative w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 
+                                    rounded-xl font-bold text-lg md:text-xl
+                                    transition-all duration-200 border-2 border-opacity-50
+                                    ${getKeyStyle(letter)}
+                                  `}
+                                >
+                                  {letter.toUpperCase()}
+                                  {letterInWord && remainingCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                      {remainingCount}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Legend */}
+                      <div className="mt-3 text-center">
+                        <div className="flex flex-wrap justify-center gap-3 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-gradient-to-br from-yellow-300 to-orange-400 rounded"></div>
+                            <span>Available</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-gray-300 rounded"></div>
+                            <span>Not in word</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-green-200 rounded"></div>
+                            <span>Used up</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Feedback */}
+                    {feedback && (
+                      <div className="text-center">
+                        {feedback === 'correct' ? (
+                          <div className="bg-green-100 border-4 border-green-400 rounded-3xl p-6 md:p-8 shadow-lg">
+                            <div className="text-center mb-4"><CheckIcon /></div>
+                            <h3 className="text-3xl md:text-4xl font-bold text-green-700 mb-4">
+                              🎉 Excellent! 🎉
+                            </h3>
+                            <p className="text-xl md:text-2xl text-green-600 mb-6">
+                              You spelled "{currentWord}" perfectly!
+                            </p>
+                            <button
+                              onClick={startNewWord}
+                              className="bg-gradient-to-r from-green-400 to-blue-500 text-white text-xl md:text-2xl font-bold py-4 px-6 md:px-8 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                            >
+                              Next Word! ➡️
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="bg-orange-100 border-4 border-orange-400 rounded-3xl p-6 md:p-8 shadow-lg">
+                            <div className="text-center mb-4"><XIcon /></div>
+                            <h3 className="text-3xl md:text-4xl font-bold text-orange-700 mb-4">
+                              Good Try! 💪
+                            </h3>
+                            <p className="text-xl md:text-2xl text-orange-600 mb-6">
+                              Keep practicing - you're doing great!
+                            </p>
+                            <button
+                              onClick={startNewWord}
+                              className="bg-gradient-to-r from-orange-400 to-red-500 text-white text-xl md:text-2xl font-bold py-4 px-6 md:px-8 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                            >
+                              Try Another Word! 🌟
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Reset Button */}
+                    <div className="text-center">
+                      <button
+                        onClick={resetGame}
+                        className="bg-gray-600 text-white text-lg md:text-xl font-semibold py-3 px-5 md:px-6 rounded-2xl shadow-lg hover:bg-gray-700 transition-colors duration-200"
+                      >
+                        <RefreshIcon /> Start Over
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // Render the app
+        ReactDOM.render(<SpellingApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
