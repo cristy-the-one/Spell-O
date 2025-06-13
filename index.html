@@ -15,7 +15,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const {useState, useEffect} = React;
+    const {useState, useEffect, useRef} = React;
 
     const SpellingApp = () => {
       const [currentWord, setCurrentWord] = useState('');
@@ -26,6 +26,7 @@
       const [showAnswer, setShowAnswer] = useState(false);
       const [gameStarted, setGameStarted] = useState(false);
       const [letterCounts, setLetterCounts] = useState({});
+      const speakTimeoutRef = useRef(null);
 
       // Simple word list appropriate for kids
       const wordList = [
@@ -309,8 +310,22 @@
 
       useEffect(() => {
         if (gameStarted && currentWord) {
-          setTimeout(() => speakWord(), 500);
+          if (speakTimeoutRef.current) {
+            clearTimeout(speakTimeoutRef.current);
+          }
+
+          speakTimeoutRef.current = setTimeout(() => {
+            speakWord();
+            speakTimeoutRef.current = null;
+          }, 500);
         }
+
+        return () => {
+          if (speakTimeoutRef.current) {
+            clearTimeout(speakTimeoutRef.current);
+            speakTimeoutRef.current = null;
+          }
+        };
       }, [currentWord, gameStarted]);
 
       // Initialize voice loading on component mount
