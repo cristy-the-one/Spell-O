@@ -26,6 +26,7 @@
       const [showAnswer, setShowAnswer] = useState(false);
       const [gameStarted, setGameStarted] = useState(false);
       const [letterCounts, setLetterCounts] = useState({});
+      const [showDescription, setShowDescription] = useState(false);
 
       // Simple word list appropriate for kids
       const wordList = [
@@ -84,8 +85,45 @@
         setUserInput('');
         setFeedback('');
         setShowAnswer(false);
+        setShowDescription(false);
         setGameStarted(true);
         setLetterCounts(countLettersInWord(newWord));
+      };
+
+      const animalWords = new Set([
+        'cat','dog','fish','bird','cow','pig','duck','goat','sheep','bee','bug','ant',
+        'lion','tiger','bear','monkey','giraffe','zebra','rabbit','mouse','fox','owl',
+        'whale','shark','seal','octopus','dolphin','starfish'
+      ]);
+      const foodWords = new Set([
+        'apple','cake','bread','butter','cheese','yogurt','carrot','candy','chocolate',
+        'cereal','pizza','burger','grape','peach','pear','banana','milk'
+      ]);
+      const colorWords = new Set(['green','purple','orange','yellow']);
+      const actionWords = new Set([
+        'run','walk','jump','dance','sing','write','read','help','build','make','clean',
+        'share','listen','look','climb','draw'
+      ]);
+      const adjectiveWords = new Set([
+        'happy','small','quick','angry','brave','shy','kind','funny','silly','nice','mean','smart','tired'
+      ]);
+      const familyWords = new Set([
+        'mom','dad','sister','brother','grandma','grandpa','uncle','aunt','cousin','baby'
+      ]);
+      const professionWords = new Set([
+        'doctor','nurse','dentist','teacher','student','police','fireman','farmer','chef','pilot','driver','sailor','artist','singer','dancer','writer','actor','painter','builder'
+      ]);
+
+      const getDescription = (word) => {
+        const w = word.toLowerCase();
+        if (animalWords.has(w)) return 'An animal';
+        if (foodWords.has(w)) return 'A type of food';
+        if (colorWords.has(w)) return 'A color';
+        if (actionWords.has(w)) return 'An action word';
+        if (adjectiveWords.has(w)) return 'A describing word';
+        if (familyWords.has(w)) return 'A family member';
+        if (professionWords.has(w)) return 'A profession';
+        return 'A common word';
       };
 
       // Enhanced female voice detection function
@@ -287,6 +325,7 @@
         setUserInput('');
         setFeedback('');
         setShowAnswer(false);
+        setShowDescription(false);
         setLetterCounts({});
       };
 
@@ -312,6 +351,13 @@
           setTimeout(() => speakWord(), 500);
         }
       }, [currentWord, gameStarted]);
+
+      useEffect(() => {
+        if (!gameStarted || !currentWord || feedback) return;
+        setShowDescription(false);
+        const timer = setTimeout(() => setShowDescription(true), 10000);
+        return () => clearTimeout(timer);
+      }, [userInput, currentWord, gameStarted, feedback]);
 
       // Initialize voice loading on component mount
       useEffect(() => {
@@ -410,6 +456,12 @@
                     <div className="bg-blue-100 rounded-2xl p-3 mb-3">
                       <p className="text-md text-gray-700">The word was:</p>
                       <p className="text-2xl md:text-3xl font-bold text-blue-600">{currentWord}</p>
+                    </div>
+                  )}
+
+                  {showDescription && !showAnswer && (
+                    <div className="bg-yellow-100 rounded-2xl p-3 mb-3">
+                      <p className="text-md text-gray-700">Hint: {getDescription(currentWord)}</p>
                     </div>
                   )}
 
