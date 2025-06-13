@@ -617,8 +617,10 @@
       );
     };
 
-    // Render the app
-    ReactDOM.render(<SpellingApp />, document.getElementById('root'));
+    // Render the app using React 18's createRoot API
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<SpellingApp />);
   </script>
 </body>
 
