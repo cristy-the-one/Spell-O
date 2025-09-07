@@ -29,6 +29,8 @@
 
       const [showDescription, setShowDescription] = useState(false);
 
+      const [voices, setVoices] = useState([]);
+
       const speakTimeoutRef = useRef(null);
 
       // Simple word list appropriate for kids
@@ -215,38 +217,43 @@
         return englishNonMale.length > 0 ? englishNonMale[0] : nonMaleVoices[0];
       };
 
-      // Enhanced speakWord function
+      // Enhanced speakWord function with mobile fallback
       const speakWord = () => {
-        if ('speechSynthesis' in window && currentWord) {
-          // Ensure voices are loaded
-          const loadVoicesAndSpeak = () => {
-            const voices = speechSynthesis.getVoices();
+        if (!currentWord) return;
 
-            if (voices.length === 0) {
-              // Voices not loaded yet, wait and retry
-              setTimeout(loadVoicesAndSpeak, 100);
-              return;
-            }
+        const fallbackPlay = () => {
+          const audio = new Audio(
+            `https://ssl.gstatic.com/dictionary/static/sounds/oxford/${currentWord}--_us_1.mp3`
+          );
+          audio.play().catch(err => console.error('Audio playback failed:', err));
+        };
 
-            const utterance = new SpeechSynthesisUtterance(currentWord);
-            utterance.rate = 0.6;
-            utterance.pitch = 1.3;
-            utterance.volume = 0.9;
+        if ('speechSynthesis' in window && voices.length > 0) {
+          const utterance = new SpeechSynthesisUtterance(currentWord);
+          utterance.rate = 0.6;
+          utterance.pitch = 1.3;
+          utterance.volume = 0.9;
 
-            // Use comprehensive female voice detection
-            const femaleVoice = findBestFemaleVoice(voices);
+          // Use comprehensive female voice detection
+          const femaleVoice = findBestFemaleVoice(voices);
 
-            if (femaleVoice) {
-              utterance.voice = femaleVoice;
-              console.log('Selected voice:', femaleVoice.name, femaleVoice.lang);
-            } else {
-              console.warn('No female voice found, using default');
-            }
+          if (femaleVoice) {
+            utterance.voice = femaleVoice;
+            console.log('Selected voice:', femaleVoice.name, femaleVoice.lang);
+          } else {
+            console.warn('No female voice found, using default');
+          }
 
+          try {
+            speechSynthesis.cancel();
+            speechSynthesis.resume();
             speechSynthesis.speak(utterance);
-          };
-
-          loadVoicesAndSpeak();
+          } catch (error) {
+            console.warn('Speech synthesis failed, falling back to audio', error);
+            fallbackPlay();
+          }
+        } else {
+          fallbackPlay();
         }
       };
 
@@ -379,19 +386,18 @@
       // Initialize voice loading on component mount
       useEffect(() => {
         if ('speechSynthesis' in window) {
-          // Add voice loading event listener
-          const handleVoicesChanged = () => {
-            console.log('Voices loaded:', speechSynthesis.getVoices().length);
+          const loadVoices = () => {
+            const available = speechSynthesis.getVoices();
+            if (available.length > 0) {
+              setVoices(available);
+            }
           };
 
-          speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+          speechSynthesis.addEventListener('voiceschanged', loadVoices);
+          loadVoices();
 
-          // Force load voices on some browsers
-          speechSynthesis.getVoices();
-
-          // Cleanup
           return () => {
-            speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+            speechSynthesis.removeEventListener('voiceschanged', loadVoices);
           };
         }
       }, []);
