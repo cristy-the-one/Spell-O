@@ -9,6 +9,25 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      background-color: #fdf3c6;
+    }
+
+    .honeycomb-bg {
+      background-color: #fdf3c6;
+      background-image:
+        radial-gradient(circle at 20% 15%, rgba(255, 249, 230, 0.8), rgba(255, 249, 230, 0)),
+        radial-gradient(circle at 80% 0%, rgba(255, 198, 104, 0.45), rgba(255, 198, 104, 0)),
+        linear-gradient(135deg, rgba(248, 204, 114, 0.35), rgba(245, 180, 65, 0.15)),
+        url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27105%27%20height%3D%27129.904%27%20viewBox%3D%270%200%20105%20129.904%27%3E%20%20%3Cdefs%3E%20%20%20%20%3ClinearGradient%20id%3D%27honeyStroke%27%20x1%3D%270%25%27%20y1%3D%270%25%27%20x2%3D%27100%25%27%20y2%3D%27100%25%27%3E%20%20%20%20%20%20%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%23f6d47a%27%20/%3E%20%20%20%20%20%20%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%23e6a840%27%20/%3E%20%20%20%20%3C/linearGradient%3E%20%20%20%20%3ClinearGradient%20id%3D%27honeyGlow%27%20x1%3D%270%25%27%20y1%3D%270%25%27%20x2%3D%270%25%27%20y2%3D%27100%25%27%3E%20%20%20%20%20%20%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%23fff5da%27%20stop-opacity%3D%270.65%27%20/%3E%20%20%20%20%20%20%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%23f3c662%27%20stop-opacity%3D%270%27%20/%3E%20%20%20%20%3C/linearGradient%3E%20%20%3C/defs%3E%20%20%3Cg%20fill%3D%27none%27%20stroke%3D%27url%28%23honeyStroke%29%27%20stroke-width%3D%271.4%27%20stroke-linejoin%3D%27round%27%3E%20%20%20%20%3Cpolygon%20points%3D%2760.000%2C25.981%2045.000%2C51.962%2015.000%2C51.962%200.000%2C25.981%2015.000%2C0.000%2045.000%2C0.000%27%20/%3E%20%20%20%20%3Cpolygon%20points%3D%2760.000%2C77.942%2045.000%2C103.923%2015.000%2C103.923%200.000%2C77.942%2015.000%2C51.962%2045.000%2C51.962%27%20/%3E%20%20%20%20%3Cpolygon%20points%3D%27105.000%2C51.962%2090.000%2C77.942%2060.000%2C77.942%2045.000%2C51.962%2060.000%2C25.981%2090.000%2C25.981%27%20/%3E%20%20%20%20%3Cpolygon%20points%3D%27105.000%2C103.923%2090.000%2C129.904%2060.000%2C129.904%2045.000%2C103.923%2060.000%2C77.942%2090.000%2C77.942%27%20/%3E%20%20%3C/g%3E%20%20%3Cg%20fill%3D%27url%28%23honeyGlow%29%27%20fill-opacity%3D%270.55%27%3E%20%20%20%20%3Cpolygon%20points%3D%2760.000%2C25.981%2045.000%2C51.962%2015.000%2C51.962%200.000%2C25.981%27%20/%3E%20%20%20%20%3Cpolygon%20points%3D%2760.000%2C77.942%2045.000%2C103.923%2015.000%2C103.923%200.000%2C77.942%27%20/%3E%20%20%20%20%3Cpolygon%20points%3D%27105.000%2C51.962%2090.000%2C77.942%2060.000%2C77.942%2045.000%2C51.962%27%20/%3E%20%20%20%20%3Cpolygon%20points%3D%27105.000%2C103.923%2090.000%2C129.904%2060.000%2C129.904%2045.000%2C103.923%27%20/%3E%20%20%3C/g%3E%3C/svg%3E");
+      background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+      background-size: 120% 120%, 160% 160%, 100% 100%, 105px 129.904px;
+      background-position: center top, right top, center, 0 0;
+      background-blend-mode: screen, multiply, soft-light, normal;
+    }
+  </style>
 </head>
 
 <body>
@@ -424,7 +443,7 @@
       );
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-4">
+        <div className="min-h-screen honeycomb-bg p-4">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="text-center mb-6">
