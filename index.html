@@ -402,6 +402,34 @@
         return () => clearTimeout(timer);
       }, [userInput, currentWord, gameStarted, feedback]);
 
+      // Auto-check when all letters are used
+      useEffect(() => {
+        if (!gameStarted || !currentWord || feedback || userInput.length === 0) return;
+        
+        // Check if all letters in the word have been used
+        const allLettersUsed = Object.entries(letterCounts).every(([letter, count]) => {
+          if (currentWord.toLowerCase().includes(letter)) {
+            return count === 0;
+          }
+          return true;
+        });
+        
+        if (allLettersUsed && userInput.length === currentWord.length) {
+          // Auto-trigger check spelling
+          checkSpelling();
+        }
+      }, [letterCounts, userInput, currentWord, gameStarted, feedback]);
+
+      // Auto-advance to next word after celebration
+      useEffect(() => {
+        if (feedback === 'correct') {
+          const timer = setTimeout(() => {
+            startNewWord();
+          }, 2000);
+          return () => clearTimeout(timer);
+        }
+      }, [feedback]);
+
       // Initialize voice loading on component mount
       useEffect(() => {
         if ('speechSynthesis' in window) {
